@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { savePatientData } from './firebase';
 
 const GREMP_QUESTIONS = [
   {
@@ -47,22 +46,13 @@ const GREMP_QUESTIONS = [
 ];
 
 const STEPS = [
-  { id: 1, label: 'Paciente' },
-  { id: 2, label: 'Variables' },
-  { id: 3, label: 'Resultado' }
+  { id: 1, label: 'Variables' },
+  { id: 2, label: 'Resultado' }
 ];
 
 export default function App() {
   const [step, setStep] = useState(1);
-  const [patientInfo, setPatientInfo] = useState({
-    nombre: '',
-    edad: '',
-    sexo: '',
-    diabetico_conocido: ''
-  });
   const [answers, setAnswers] = useState({});
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(null);
 
   // PWA installation states
   const [deferredPrompt, setDeferredPrompt] = useState(null);
@@ -100,8 +90,6 @@ export default function App() {
     }
   };
 
-  const handleInfoChange = (e) => setPatientInfo({ ...patientInfo, [e.target.name]: e.target.value });
-  const handleFieldSelect = (field, value) => setPatientInfo({ ...patientInfo, [field]: value });
   const handleAnswerChange = (qId, points) => setAnswers({ ...answers, [qId]: points });
 
   const calculateScore = () => Object.values(answers).reduce((acc, curr) => acc + curr, 0);
@@ -139,40 +127,14 @@ export default function App() {
     };
   };
 
-  const submitData = async () => {
-    setIsSaving(true);
-    const score = calculateScore();
-    const dataToSave = {
-      ...patientInfo,
-      gremp_score: score,
-      answers,
-      risk_classification: getRiskClassification(score).risk
-    };
-
-    const result = await savePatientData(dataToSave);
-    if (result.success) {
-      setSaveSuccess(true);
-    } else {
-      setSaveSuccess(false);
-    }
-    setIsSaving(false);
-  };
-
   const resetForm = () => {
     setStep(1);
-    setPatientInfo({ nombre: '', edad: '', sexo: '', diabetico_conocido: '' });
     setAnswers({});
-    setSaveSuccess(null);
   };
 
   const answeredCount = Object.keys(answers).length;
   const totalQuestions = GREMP_QUESTIONS.length;
-  const isStep1Valid =
-    patientInfo.nombre.trim() !== '' &&
-    patientInfo.edad !== '' &&
-    patientInfo.sexo !== '' &&
-    patientInfo.diabetico_conocido !== '';
-  const isStep2Valid = answeredCount === totalQuestions;
+  const isAllAnswered = answeredCount === totalQuestions;
   const currentScore = calculateScore();
   const riskInfo = getRiskClassification(currentScore);
 
@@ -214,8 +176,8 @@ export default function App() {
           </div>
 
           {/* Stepper Progress */}
-          <div className="mb-5">
-            <div className="grid grid-cols-3 gap-1.5">
+          <div className="mb-4">
+            <div className="grid grid-cols-2 gap-2">
               {STEPS.map((s) => {
                 const isActive = step === s.id;
                 const isDone = step > s.id;
@@ -249,131 +211,32 @@ export default function App() {
             </div>
           </div>
 
-          {/* STEP 1: Patient Info */}
+          {/* STEP 1: GREMP Questions */}
           {step === 1 && (
-            <div key="step1" className="space-y-3.5 animate-step">
-              <div>
-                <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
-                  Nombre del Paciente
-                </label>
-                <input
-                  type="text"
-                  name="nombre"
-                  autoComplete="off"
-                  value={patientInfo.nombre}
-                  onChange={handleInfoChange}
-                  className="w-full bg-slate-950/80 border border-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl px-3.5 py-2.5 text-[13px] sm:text-sm text-slate-100 placeholder-slate-500 outline-none transition-all"
-                  placeholder="Nombre completo o iniciales"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
-                    Edad (años)
-                  </label>
-                  <input
-                    type="number"
-                    name="edad"
-                    inputMode="numeric"
-                    min="0"
-                    max="120"
-                    value={patientInfo.edad}
-                    onChange={handleInfoChange}
-                    placeholder="Ej. 54"
-                    className="w-full bg-slate-950/80 border border-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl px-3.5 py-2.5 text-[13px] sm:text-sm text-slate-100 placeholder-slate-500 outline-none transition-all"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
-                    Sexo
-                  </label>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {[
-                      { value: 'M', label: 'Masc' },
-                      { value: 'F', label: 'Fem' }
-                    ].map((item) => {
-                      const selected = patientInfo.sexo === item.value;
-                      return (
-                        <button
-                          key={item.value}
-                          type="button"
-                          onClick={() => handleFieldSelect('sexo', item.value)}
-                          className={`py-2.5 px-2 rounded-xl text-xs font-semibold border transition-all active:scale-[0.97] ${
-                            selected
-                              ? 'bg-blue-600/20 border-blue-500 text-blue-300 shadow-inner shadow-blue-500/10'
-                              : 'bg-slate-950/80 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
-                          }`}
-                        >
-                          {item.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
-                  ¿El paciente ya se conocía diabético?
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { value: 'No', label: 'No' },
-                    { value: 'Sí', label: 'Sí' }
-                  ].map((item) => {
-                    const selected = patientInfo.diabetico_conocido === item.value;
-                    return (
-                      <button
-                        key={item.value}
-                        type="button"
-                        onClick={() => handleFieldSelect('diabetico_conocido', item.value)}
-                        className={`py-2.5 px-3 rounded-xl text-xs font-semibold border transition-all active:scale-[0.97] ${
-                          selected
-                            ? 'bg-blue-600/20 border-blue-500 text-blue-300 shadow-inner shadow-blue-500/10'
-                            : 'bg-slate-950/80 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
-                        }`}
-                      >
-                        {item.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="pt-1.5">
-                <button
-                  onClick={() => {
-                    if (isStep1Valid) setStep(2);
-                  }}
-                  disabled={!isStep1Valid}
-                  className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-semibold py-2.5 px-5 rounded-xl shadow-lg shadow-blue-600/25 active:scale-[0.98] transition-all disabled:opacity-40 disabled:pointer-events-none disabled:shadow-none flex items-center justify-center gap-1.5 text-[13px] sm:text-sm"
-                >
-                  <span>Siguiente</span>
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* STEP 2: GREMP Questions */}
-          {step === 2 && (
-            <div key="step2" className="space-y-3 animate-step">
+            <div key="step1" className="space-y-3 animate-step">
               {/* Sticky mobile subheader with live progress */}
               <div className="sticky top-2 z-10 bg-slate-900/95 backdrop-blur-md border border-slate-800/90 rounded-xl px-3 py-2 shadow-lg shadow-black/40 flex items-center justify-between">
                 <div>
-                  <h2 className="text-xs font-bold text-slate-100">Variables GREMP</h2>
+                  <h2 className="text-xs font-bold text-slate-100">Variables de Ingreso</h2>
                   <p className="text-[11px] text-slate-400">
                     Respondidas: <span className="text-blue-400 font-semibold">{answeredCount}</span>/{totalQuestions}
                   </p>
                 </div>
-                <div className="flex items-center gap-1.5 bg-slate-950/90 border border-slate-800 px-2.5 py-1 rounded-lg">
-                  <span className="text-[11px] text-slate-400">Puntaje:</span>
-                  <span className="text-sm font-extrabold text-blue-400">{currentScore}</span>
-                  <span className="text-[10px] text-slate-500">pts</span>
+                <div className="flex items-center gap-2">
+                  {answeredCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={resetForm}
+                      className="text-[10px] text-slate-400 hover:text-slate-200 px-2 py-1 rounded-lg bg-slate-800/70 border border-slate-700/60 active:scale-95 transition-all"
+                    >
+                      Limpiar
+                    </button>
+                  )}
+                  <div className="flex items-center gap-1.5 bg-slate-950/90 border border-slate-800 px-2.5 py-1 rounded-lg">
+                    <span className="text-[11px] text-slate-400">Puntaje:</span>
+                    <span className="text-sm font-extrabold text-blue-400">{currentScore}</span>
+                    <span className="text-[10px] text-slate-500">pts</span>
+                  </div>
                 </div>
               </div>
 
@@ -461,19 +324,12 @@ export default function App() {
                 })}
               </div>
 
-              <div className="flex gap-2.5 pt-1.5">
+              <div className="pt-1.5">
                 <button
                   type="button"
-                  onClick={() => setStep(1)}
-                  className="w-1/3 bg-slate-800/90 hover:bg-slate-800 text-slate-200 font-semibold py-2.5 rounded-xl border border-slate-700/70 active:scale-[0.98] transition-all text-xs sm:text-sm"
-                >
-                  Atrás
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStep(3)}
-                  disabled={!isStep2Valid}
-                  className="w-2/3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-semibold py-2.5 rounded-xl shadow-lg shadow-blue-600/25 active:scale-[0.98] transition-all disabled:opacity-40 disabled:pointer-events-none disabled:shadow-none text-xs sm:text-sm"
+                  onClick={() => setStep(2)}
+                  disabled={!isAllAnswered}
+                  className="w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-semibold py-2.5 rounded-xl shadow-lg shadow-blue-600/25 active:scale-[0.98] transition-all disabled:opacity-40 disabled:pointer-events-none disabled:shadow-none text-xs sm:text-sm"
                 >
                   Evaluar Mortalidad
                 </button>
@@ -481,20 +337,9 @@ export default function App() {
             </div>
           )}
 
-          {/* STEP 3: Results */}
-          {step === 3 && (
-            <div key="step3" className="space-y-4 text-center animate-step">
-              {/* Patient Summary Pill */}
-              <div className="inline-flex flex-wrap items-center justify-center gap-1.5 px-3 py-1 rounded-full bg-slate-950/80 border border-slate-800 text-[11px] text-slate-300">
-                <span className="font-semibold text-white">{patientInfo.nombre}</span>
-                <span className="text-slate-600">•</span>
-                <span>{patientInfo.edad} años</span>
-                <span className="text-slate-600">•</span>
-                <span>{patientInfo.sexo === 'M' ? 'Masc' : 'Fem'}</span>
-                <span className="text-slate-600">•</span>
-                <span>DM previa: {patientInfo.diabetico_conocido}</span>
-              </div>
-
+          {/* STEP 2: Results */}
+          {step === 2 && (
+            <div key="step2" className="space-y-4 text-center animate-step">
               <div
                 className={`p-4 sm:p-5 bg-gradient-to-b ${riskInfo.cardClass} rounded-2xl border shadow-xl transition-all`}
               >
@@ -538,59 +383,21 @@ export default function App() {
               </div>
 
               {/* Action Buttons */}
-              <div className="space-y-2.5 pt-0.5">
-                {saveSuccess === null ? (
-                  <button
-                    onClick={submitData}
-                    disabled={isSaving}
-                    className="w-full bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-semibold py-2.5 px-5 rounded-xl shadow-lg shadow-emerald-600/20 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 text-xs sm:text-sm"
-                  >
-                    {isSaving ? (
-                      <>
-                        <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                        </svg>
-                        <span>Guardando...</span>
-                      </>
-                    ) : (
-                      <>
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
-                        <span>Registrar Paciente en BD</span>
-                      </>
-                    )}
-                  </button>
-                ) : saveSuccess ? (
-                  <div className="p-2.5 bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 rounded-xl font-medium text-xs flex items-center justify-center gap-1.5">
-                    <svg className="w-4 h-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>¡Paciente registrado exitosamente!</span>
-                  </div>
-                ) : (
-                  <div className="p-2.5 bg-rose-500/15 border border-rose-500/30 text-rose-300 rounded-xl font-medium text-xs">
-                    Error de conexión. Verifica la configuración de Firebase.
-                  </div>
-                )}
-
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setStep(2)}
-                    className="w-1/3 bg-slate-800/80 hover:bg-slate-800 text-slate-300 font-semibold py-2.5 rounded-xl border border-slate-700/70 active:scale-[0.98] transition-all text-xs"
-                  >
-                    Editar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={resetForm}
-                    className="w-2/3 bg-slate-800 hover:bg-slate-700 text-slate-100 font-semibold py-2.5 rounded-xl border border-slate-700 active:scale-[0.98] transition-all text-xs"
-                  >
-                    Nuevo Paciente
-                  </button>
-                </div>
+              <div className="flex gap-2 pt-0.5">
+                <button
+                  type="button"
+                  onClick={() => setStep(1)}
+                  className="w-1/3 bg-slate-800/80 hover:bg-slate-800 text-slate-300 font-semibold py-2.5 rounded-xl border border-slate-700/70 active:scale-[0.98] transition-all text-xs"
+                >
+                  Editar
+                </button>
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  className="w-2/3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-semibold py-2.5 rounded-xl shadow-lg shadow-blue-600/20 active:scale-[0.98] transition-all text-xs"
+                >
+                  Nuevo Cálculo
+                </button>
               </div>
             </div>
           )}
