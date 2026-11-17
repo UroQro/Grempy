@@ -96,30 +96,33 @@ export default function App() {
 
   const getRiskClassification = (score) => {
     if (score <= 3) return {
-      risk: 'Riesgo Bajo (0-3 pts)',
+      risk: 'Riesgo Bajo (0–3 pts)',
       level: 'low',
-      mortality: '3.8%',
-      desc: 'Mortalidad esperada: 3.8%. VPN 96.2%. Puede apoyar manejo en hospitalización general con vigilancia estrecha.',
+      observedMortality: '3.8% (4/104)',
+      ci95: 'IC 95% 1.5–9.5%',
+      desc: 'VPN 96.2%. Puede apoyar manejo en hospitalización general con vigilancia clínica estrecha.',
       badgeClass: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
       cardClass: 'from-emerald-950/50 via-slate-900/90 to-slate-900/90 border-emerald-500/30 shadow-emerald-950/30',
       scoreClass: 'text-emerald-400',
       barClass: 'bg-gradient-to-r from-emerald-500 to-teal-400'
     };
     if (score <= 5) return {
-      risk: 'Riesgo Intermedio (4-5 pts)',
+      risk: 'Riesgo Intermedio (4–5 pts)',
       level: 'medium',
-      mortality: '15.4%',
-      desc: 'Mortalidad esperada: 15.4%. Requiere vigilancia clínica más estrecha y reevaluación frecuente.',
+      observedMortality: '15.4% (12/78)',
+      ci95: 'IC 95% 9.0–25.0%',
+      desc: 'Considerar vigilancia clínica estrecha y reevaluación frecuente.',
       badgeClass: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
       cardClass: 'from-amber-950/50 via-slate-900/90 to-slate-900/90 border-amber-500/30 shadow-amber-950/30',
       scoreClass: 'text-amber-400',
       barClass: 'bg-gradient-to-r from-amber-500 to-orange-400'
     };
     return {
-      risk: 'Riesgo Alto (6-7 pts)',
+      risk: 'Riesgo Alto (6–7 pts)',
       level: 'high',
-      mortality: '62.5%',
-      desc: 'Mortalidad esperada: 62.5%. Justifica valoración inmediata por Medicina Crítica, reanimación agresiva y control temprano del foco.',
+      observedMortality: '62.5% (5/8)',
+      ci95: 'IC 95% 31–86%',
+      desc: 'Considerar valoración temprana por Medicina Crítica, reanimación intensiva y control oportuno del foco.',
       badgeClass: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
       cardClass: 'from-rose-950/60 via-slate-900/90 to-slate-900/90 border-rose-500/40 shadow-rose-950/40',
       scoreClass: 'text-rose-400',
@@ -361,25 +364,34 @@ export default function App() {
                   />
                 </div>
 
-                <div className="mt-3 p-3 bg-slate-950/75 rounded-xl border border-slate-800/90 text-left">
-                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                <div className="mt-3 p-3.5 bg-slate-950/75 rounded-xl border border-slate-800/90 text-left space-y-2">
+                  <div>
                     <span
                       className={`inline-block text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border ${riskInfo.badgeClass}`}
                     >
                       {riskInfo.risk}
                     </span>
-                    <span className="text-[11px] font-semibold text-slate-400">
-                      Mortalidad: <strong className="text-slate-200">{riskInfo.mortality}</strong>
-                    </span>
                   </div>
-                  <p className="text-xs text-slate-300 leading-relaxed">
+
+                  <p className="text-xs text-slate-200 leading-snug">
+                    Mortalidad observada en este grupo:{' '}
+                    <strong className="font-bold text-white">{riskInfo.observedMortality}</strong>{' '}
+                    <span className="text-slate-400">({riskInfo.ci95})</span>
+                  </p>
+
+                  <p className="text-xs text-slate-300 leading-relaxed pt-1 border-t border-slate-800/80">
                     {riskInfo.desc}
                   </p>
                 </div>
 
-                <p className="text-[10px] text-slate-400/80 mt-3 italic leading-normal">
-                  *No predice falla a manejo mínimamente invasivo ni necesidad de nefrectomía.
-                </p>
+                <div className="mt-3 space-y-1 text-center">
+                  <p className="text-[10px] text-slate-400/90 italic leading-normal">
+                    *No predice falla del manejo mínimamente invasivo ni necesidad de nefrectomía. No sustituye el juicio clínico.
+                  </p>
+                  <p className="text-[10px] text-slate-500 leading-normal">
+                    Validación externa, Hospital Metropolitano 2016–2025 (n = 190).
+                  </p>
+                </div>
               </div>
 
               {/* Action Buttons */}
